@@ -28,6 +28,7 @@ void preencherLugares();
 void comprarIngressos(int sala);
 void printaLugares(int sala);
 void printaLugaresDisponiveis(int sala);
+void finalizarPedido(int sala, int qntIngressosNormais, int qntIngressosItasil, int qntIngressosMeiaEntrada);
 int retornaNumLugaresDisponiveis(int sala);
 int retornaNumeroColuna(char caractereColuna);
 int verificaCodigoEstudante(int codigoEstudante);
@@ -45,6 +46,24 @@ char vetorLetrasMinusculas[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'
 
 ITASIL *pHeadItasil, *pHeadItasilAux;
 ESTUDANTE *pHeadEstudante, *pHeadEstudanteAux;
+
+
+
+/*funções temporárias*/
+void listarCodigosEstudantes(ESTUDANTE *pHead){
+    printf("\n");
+    while(pHead != NULL){
+        printf("%d\n", pHead->codigo);
+        pHead = pHead->pNext;
+    }
+}
+void listarCodigosItasil(ITASIL *pHead){
+    printf("\n");
+    while(pHead != NULL){
+        printf("%u\n", pHead->codigo);
+        pHead = pHead->pNext;
+    }
+}
 
 int main(){
     setlocale(LC_ALL, "Portuguese.Brazil");
@@ -68,7 +87,7 @@ void escolhaSala(void){
     int sair=0, scanInteiro, esc;
     while(sair != 1){
         do{
-            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n0 - Encerrar programa\nEscolha uma opção: ");
+            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n4 - Listar Codigos de estudantes ja usados\n5 - Listar codigos de estudantes temporarios\n6 - Listar codigos Itasil ja usados\n7 - Lista codigos Itasil temporarios\n0 - Encerrar programa\nEscolha uma opção: ");
             scanInteiro = scanf("%d", &esc);;        /*Fazendo a verificação para valores inteiros usando o retorno da função scanf*/
             while(getchar() != '\n');
             if(scanInteiro != 1){
@@ -89,6 +108,22 @@ void escolhaSala(void){
                 break;
             case 2:
                 comprarIngressos(esc);     /*sala 3*/
+                break;
+            case 3:
+                limparTela();
+                listarCodigosEstudantes(pHeadEstudante);
+                break;
+            case 4:
+                limparTela();
+                listarCodigosEstudantes(pHeadEstudanteAux);
+                break;
+            case 5:
+                limparTela();
+                listarCodigosItasil(pHeadItasil);
+                break;
+            case 6:
+                limparTela();
+                listarCodigosItasil(pHeadItasilAux);
                 break;
             default:
                 limparTela();
@@ -114,7 +149,7 @@ void comprarIngressos(int sala){
     } while(scan != 1 || qntIngressos < -1 || qntIngressos == 0 || qntIngressos > numLugaresDisponiveis);
 
     if(qntIngressos != -1){
-        int i, codigoEstudante, qntIngressosMeiaEntrada, qntIngressosItasil, qntIngressosNormais=qntIngressos, valorTotal, copiaQntIngressosMeiaEntrada, copiaQntIngressosItasil;
+        int i, codigoEstudante, qntIngressosMeiaEntrada, qntIngressosItasil, qntIngressosNormais=qntIngressos, copiaQntIngressosMeiaEntrada, copiaQntIngressosItasil;
         unsigned int codigoItasil;
         do{
             printf("Digite o número de meias-entradas (ingressos restantes: %d) -> ", qntIngressosNormais);
@@ -201,7 +236,7 @@ void comprarIngressos(int sala){
                             /*adicionar o código do cliente ITASIL na lista encadeada*/
                             unsigned int adicao1, adicao2;
                             adicao1 = adicionarCodigoItasil(&pHeadItasil, codigoItasil);     /*Adicionando na lista encadeada principal*/
-                            adicao2 = adicionarCodigoItasil(&pHeadItasil, codigoItasil);     /*Adicionando na lista encadeada temporária*/
+                            adicao2 = adicionarCodigoItasil(&pHeadItasilAux, codigoItasil);     /*Adicionando na lista encadeada temporária*/
                             if(adicao1 && adicao2){ 
                                 printf("Desconto aplicado com sucesso.\n");
                                 break;
@@ -246,7 +281,6 @@ void finalizarPedido(sala, qntIngressosNormais, qntIngressosItasil, qntIngressos
 
             fileira = fileira-1;
             coluna = retornaNumeroColuna(colunaChar);
-            printf("%d %d\n", fileira, coluna);
             if(fileira < 0 || fileira > 39 || coluna == -1 )
                 printf("Assento inválido. Tente novamente.\n");
             else if(lugares[sala][fileira][coluna] == 'X')

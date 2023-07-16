@@ -7,21 +7,6 @@
 #define FILEIRAS 40
 #define ASSENTOS 10
 
-void limparTela();
-void escolhaSala();
-void preencherLugares();
-void comprarIngressos(int sala);
-void printaLugares(int sala);
-void printaLugaresDisponiveis(int sala);
-int retornaNumLugaresDisponiveis(int sala);
-int retornaNumeroColuna(char caractereColuna);
-int verificaCodigoEstudante(char *codigoEstudanteString, int *codigoEstudante);
-int verificaCodigoItasil(unsigned int codigoItasil);
-
-char lugares[NUM_SALAS][FILEIRAS][ASSENTOS];
-char vetorLetrasMaiusculas[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
-char vetorLetrasMinusculas[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'};
-
 typedef struct _SALA{
     int sala, fileira, assento, codigoEstudante;
     unsigned int codigoItasil;
@@ -36,6 +21,30 @@ typedef struct _ESTUDANTE{
     int codigo;
     struct _ESTUDANTE *pNext;
 } ESTUDANTE;
+
+void limparTela();
+void escolhaSala();
+void preencherLugares();
+void comprarIngressos(int sala);
+void printaLugares(int sala);
+void printaLugaresDisponiveis(int sala);
+int retornaNumLugaresDisponiveis(int sala);
+int retornaNumeroColuna(char caractereColuna);
+int verificaCodigoEstudante(int codigoEstudante);
+int verificaCodigoItasil(unsigned int codigoItasil);
+int adicionarCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante);
+int adicionarCodigoItasil(ITASIL **pHead, int codigoItasil);
+int removerCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante);
+int removerCodigoItasil(ITASIL **pHead, int codigoItasil);
+int buscarCodigoEstudante(ESTUDANTE *pHead, int codigoEstudante);
+int buscarCodigoItasil(ITASIL *pHead, int codigoItasil);
+
+char lugares[NUM_SALAS][FILEIRAS][ASSENTOS];
+char vetorLetrasMaiusculas[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
+char vetorLetrasMinusculas[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'};
+
+ITASIL *pHeadItasil;
+ESTUDANTE *pHeadEstudante;
 
 int main(){
     setlocale(LC_ALL, "Portuguese.Brazil");
@@ -59,7 +68,7 @@ void escolhaSala(void){
     int sair=0, scanInteiro, esc;
     while(sair != 1){
         do{
-            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\nEscolha uma opção: ");
+            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n0 - Encerrar programa\nEscolha uma opção: ");
             scanInteiro = scanf("%d", &esc);;        /*Fazendo a verificação para valores inteiros usando o retorno da função scanf*/
             while(getchar() != '\n');
             if(scanInteiro != 1){
@@ -102,13 +111,14 @@ void comprarIngressos(int sala){
         if(scan != 1 || qntIngressos < -1 || qntIngressos == 0)
             printf("Quantidade inválida. Tente novamente.\n");
         else if(qntIngressos > numLugaresDisponiveis)
-            printf("Não há %d lugares disponíveis na sala %d", qntIngressos, sala);
+            printf("Não há tantos lugares disponíveis na sala %d\n", sala+1);
     } while(scan != 1 || qntIngressos < -1 || qntIngressos == 0 || qntIngressos > numLugaresDisponiveis);
 
     if(qntIngressos != -1){
-        int i, qntIngressosMeiaEntrada, qntIngressosItasil, qntIngressosNormais=qntIngressos, valorTotal, copiaQntIngressosMeiaEntrada, copiaQntIngressosItasil;
+        int i, codigoEstudante, qntIngressosMeiaEntrada, qntIngressosItasil, qntIngressosNormais=qntIngressos, valorTotal, copiaQntIngressosMeiaEntrada, copiaQntIngressosItasil;
         unsigned int codigoItasil;
-        char codigoEstudante[6];
+        ESTUDANTE *pHeadEstudanteAux;
+        ITASIL *pHeadItasilAux;
         do{
             printf("Digite o número de meias-entradas (ingressos restantes: %d) -> ", qntIngressosNormais);
             scan = scanf("%d", &qntIngressosMeiaEntrada);
@@ -121,39 +131,34 @@ void comprarIngressos(int sala){
 
         for(i=0; i<copiaQntIngressosMeiaEntrada; i++){
             while(1){
-                printf("Digite o código de estudante %d (digite 0 para cancelar este desconto) -> ", i+1);
-                fgets(codigoEstudante, 6, stdin);
-                if(codigoEstudante[strlen(codigoEstudante)-1] == '\n'){
-                    codigoEstudante[strlen(codigoEstudante)-1] = '\0';
+                do{
+                    printf("Digite o código de estudante %d (digite 0 para cancelar este desconto) -> ", i+1);
+                    scan = scanf("%d", &codigoEstudante);
+                    while(getchar() != '\n');
+                    if(scan != 1 || codigoEstudante < 0)
+                        printf("Código inválido. Tente novamente.\n");
+                } while(scan != 1 || codigoEstudante < 0);
+                if(codigoEstudante == 0){
+                    printf("Desconto cancelado.\n");
+                    qntIngressosNormais++;
+                    qntIngressosMeiaEntrada--;
+                    break;
                 }
-                /*DEPOIS ANALISAR ISSO MELHOR (STRING NÃO TEM \n)*/
-                /*printf("%d\n", strlen(codigoEstudante));*/
-                
-                if(strlen(codigoEstudante) == 5)
-                    while (getchar() != '\n');   /*Limpando o buffer*/
-                
-                if(strlen(codigoEstudante) != 5 && strcmp(codigoEstudante, "0") != 0)
-                    printf("Formatação incorreta.\n");
-                else{
-                    if(strcmp(codigoEstudante, "0") == 0){
-                        printf("Desconto cancelado.\n");
-                        qntIngressosNormais++;
-                        qntIngressosMeiaEntrada--;
-                        break;
-                    }
-                    else{
-                        int codigoEstudanteInt;
-                        int validacaoCodigoEstudante = verificaCodigoEstudante(codigoEstudante, &codigoEstudanteInt);
-                        if(validacaoCodigoEstudante == 1){
-                            /*adicionar o código de estudante na lista encadeada*/
+                else if(codigoEstudante < 10000 || codigoEstudante > 99999)    /*Se tiver menos ou mais de 5 dígitos*/
+                    printf("Formatação incorreta. O código de estudante possui 5 dígitos. Tente novamente\n");
+                else{     /*Se tiver 5 dígitos*/
+                    int validacaoCodigoEstudante = verificaCodigoEstudante(codigoEstudante);
+                    if(validacaoCodigoEstudante == 1){
+                        /*adicionar o código de estudante na lista encadeada*/
+                        if(adicionarCodigoEstudante(&pHeadEstudante, codigoEstudante) && adicionarCodigoEstudante(&pHeadEstudanteAux, codigoEstudante)){     /*Adicionando na lista encadeada principal e temporária*/
                             printf("Desconto aplicado com sucesso.\n");
                             break;
                         }
-                        else if(validacaoCodigoEstudante == -1)
-                            printf("Formatação incorreta. Tente novamente.\n");
-                        else
-                            printf("Código já foi utilizado no cinema. Tente novamente.\n");
                     }
+                    else if(validacaoCodigoEstudante == -1)
+                        printf("Código inválido. Tente novamente.\n");
+                    else
+                        printf("Código já foi utilizado no cinema. Tente novamente.\n");
                 }
             }
         }
@@ -188,11 +193,13 @@ void comprarIngressos(int sala){
                         int validacaoClienteItasil = verificaCodigoItasil(codigoItasil);
                         if(validacaoClienteItasil == 1){
                             /*adicionar o código de cliente Itasil na lista encadeada*/
-                            printf("Desconto aplicado com sucesso.\n");
-                            break;
+                            if(adicionarCodigoItasil(&pHeadItasil, codigoItasil) && adicionarCodigoItasil(&pHeadItasilAux, codigoItasil)){    /*Adicionando na lista encadeada principal e temporária*/
+                                printf("Desconto aplicado com sucesso.\n");
+                                break;
+                            }
                         }
                         else if(validacaoClienteItasil == -1)
-                            printf("Formatação incorreta. Tente novamente.\n");
+                            printf("Código inválido. Tente novamente.\n");
                         else
                             printf("Código já foi utilizado no cinema. Tente novamente.\n");
                     }
@@ -200,7 +207,8 @@ void comprarIngressos(int sala){
             }
         }
 
-        /*escolher assentos*/
+        limparTela();
+        /*Escolhendo os assentos*/
         printaLugares(sala);   /*Mostrando o mapa da sala*/
         for(i=0; i<qntIngressos; i++){
             while(1){
@@ -214,6 +222,7 @@ void comprarIngressos(int sala){
 
                 fileira = fileira-1;
                 coluna = retornaNumeroColuna(colunaChar);
+                printf("%d %d\n", fileira, coluna);
                 if(fileira < 0 || fileira > 39 || coluna == -1 )
                     printf("Assento inválido. Tente novamente.\n");
                 else if(lugares[sala][fileira][coluna] == 'X')
@@ -226,7 +235,6 @@ void comprarIngressos(int sala){
             }
             
         }
-
 
         valorTotal = (qntIngressosNormais * 20) + (qntIngressosMeiaEntrada * 10) + (qntIngressosItasil * 14);
         printf("Preço total: R$%d,00\nAgradecemos pelo pedido. Bom filme!\n\n", valorTotal);
@@ -275,42 +283,30 @@ void preencherLugares(){
 
 /*Retorna o índice correspondente à letra digitada para a poltrona*/
 int retornaNumeroColuna(char caractereColuna){
-    int achou=0, i, indice;
+    int i;
     for(i = 0; i < ASSENTOS; i++){
-        if(caractereColuna == vetorLetrasMaiusculas[i])
-            achou = 1;
-        else{
-            if(caractereColuna == vetorLetrasMinusculas[i])
-                achou = 1;
-        }
+        if(caractereColuna == vetorLetrasMaiusculas[i] || caractereColuna == vetorLetrasMinusculas[i])
+            return i;
     }
-    if(achou == 1)
-        indice = i;
-    else
-        indice = -1;
-    return indice;
+    return -1;
 }
 
 /*Retorna -1 (código no formato inválido), -2 (código já usado) ou 1 (código válido). A função verifica se o código de estudante já foi usado na sala e se está no fromato válido*/
-int verificaCodigoEstudante(char *codigoEstudanteString, int *codigoEstudante){
-    int i, codigoRetorno, somaAlgarismos=0;
-    for(i=0; i<5; i++){
-        if(codigoEstudanteString[i] > '9' || codigoEstudanteString[i] < '0'){    /*Verificando, por meio da tabela ASCII, se o caractere é um algarismo*/
-            codigoRetorno = -1;
-            break;
-        }
-        if(i < 4)
-            somaAlgarismos += (codigoEstudanteString[i] - '0');    /*Subtraindo o caractere '0', eu consigo transformar o valor do caractere para o inteiro correspondente*/
+int verificaCodigoEstudante(int codigoEstudante){    /*Aqui eu sei que o código de estudante chega com 5 dígitos*/
+    int i, codigoRetorno, somaAlgarismos=0, potenciaDez=10000;
+    for(i=4; i>=0; i--){
+        if(i > 0)
+            somaAlgarismos += (codigoEstudante/potenciaDez);
         else{
-            if(somaAlgarismos % 10 == (codigoEstudanteString[i] - '0'))    /*Checando se a soma dos 4 primeiros algarismos mod10 é igual ao último algarismo*/
+            if(somaAlgarismos % 10 == (codigoEstudante/potenciaDez))      /*Checando se a soma dos 4 primeiros algarismos mod10 é igual ao último algarismo*/
                 codigoRetorno = 1;
             else
                 codigoRetorno = -1;
         }
-    }
 
-    if(codigoRetorno == 1)
-        *(codigoEstudante) = atoi(codigoEstudanteString);    /*codigoEstudante receberá o valor do código como inteiro*/
+        codigoEstudante %= potenciaDez;     /*"Excluindo" o dígito mais à esquerda do código*/
+        potenciaDez /= 10;
+    }
 
     return codigoRetorno;
 }
@@ -338,4 +334,36 @@ int retornaNumLugaresDisponiveis(int sala){
     }    
     
     return numLugaresDisponiveis;
+}
+
+int adicionarCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante){    /*Esta função adicionára sempre no início da lista encadeada*/
+    ESTUDANTE *pNovo = (ESTUDANTE *)malloc(sizeof(ESTUDANTE));
+    if(!pNovo)
+        return 0;
+    else{
+        pNovo->codigo = codigoEstudante;
+        if((*pHead) == NULL)       /*Se a lista estiver vazia*/
+            pNovo->pNext = NULL;
+        else
+            pNovo->pNext = (*pHead);
+        (*pHead) = pNovo;
+    }
+
+    return 1;
+}
+
+int adicionarCodigoItasil(ITASIL **pHead, int codigoItasil){     /*Esta função adicionára sempre no início da lista encadeada*/
+    ITASIL *pNovo = (ITASIL *)malloc(sizeof(ITASIL));
+    if(!pNovo)
+        return 0;
+    else{
+        pNovo->codigo = codigoItasil;
+        if((*pHead) == NULL)      /*Se a lista estiver vazia*/
+            pNovo->pNext = NULL;
+        else
+            pNovo->pNext = (*pHead);
+        (*pHead) = pNovo;
+    }
+
+    return 1;
 }

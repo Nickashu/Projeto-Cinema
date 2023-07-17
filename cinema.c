@@ -7,6 +7,8 @@
 #define FILEIRAS 40
 #define ASSENTOS 10
 
+const char *nomeArquivo = "cinema.c";
+
 typedef struct _LUGAR_OCUPADO{
     int sala, fileira, assento, codigoEstudante;
     unsigned int codigoItasil;
@@ -14,11 +16,12 @@ typedef struct _LUGAR_OCUPADO{
 
 typedef struct _ITASIL{
     unsigned int codigo;
+    int sala;
     struct _ITASIL *pNext;
 } ITASIL;
 
 typedef struct _ESTUDANTE{
-    int codigo;
+    int codigo, sala;
     struct _ESTUDANTE *pNext;
 } ESTUDANTE;
 
@@ -31,14 +34,14 @@ void printaLugaresDisponiveis(int sala);
 void finalizarPedido(int sala, int qntIngressosNormais, int qntIngressosItasil, int qntIngressosMeiaEntrada);
 int retornaNumLugaresDisponiveis(int sala);
 int retornaNumeroColuna(char caractereColuna);
-int verificaCodigoEstudante(int codigoEstudante);
-int verificaCodigoItasil(unsigned int codigoItasil);
-int adicionarCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante);
-int adicionarCodigoItasil(ITASIL **pHead, int codigoItasil);
+int verificaCodigoEstudante(int codigoEstudante, int sala);
+int verificaCodigoItasil(unsigned int codigoItasil, int sala);
+int adicionarCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante, int sala);
+int adicionarCodigoItasil(ITASIL **pHead, int codigoItasil, int sala);
 int removerCodigoEstudante(ESTUDANTE **pHead);
 unsigned int removerCodigoItasil(ITASIL **pHead);
-int existeCodigoEstudante(ESTUDANTE *pHead, int codigoEstudante);
-int existeCodigoItasil(ITASIL *pHead, int codigoItasil);
+int existeCodigoEstudante(ESTUDANTE *pHead, int codigoEstudante, int sala);
+int existeCodigoItasil(ITASIL *pHead, int codigoItasil, int sala);
 
 char lugares[NUM_SALAS][FILEIRAS][ASSENTOS];
 char vetorLetrasMaiusculas[] = {'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J'};
@@ -64,6 +67,30 @@ void listarCodigosItasil(ITASIL *pHead){
         pHead = pHead->pNext;
     }
 }
+void resetarCinema(){
+    FILE *arquivo = fopen(nomeArquivo, "wb");
+    int i, j, k;
+    for(i=0; i<NUM_SALAS; i++){
+        for(j=0; j<FILEIRAS; j++){
+            for(k=0; k<ASSENTOS; k++){
+                lugares[i][j][k] = '0';
+            }
+        }
+    }
+    if(!arquivo)
+        printf("Erro ao abrir o arquivo.\n");
+    else
+        fclose(arquivo);
+    
+    while(pHeadEstudante != NULL){
+        removerCodigoEstudante(&pHeadEstudante);
+    }
+    while(pHeadItasil != NULL){
+        removerCodigoItasil(&pHeadItasil);
+    }
+    printf("Cinema resetado.\n");
+
+}
 
 int main(){
     setlocale(LC_ALL, "Portuguese.Brazil");
@@ -87,7 +114,7 @@ void escolhaSala(void){
     int sair=0, scanInteiro, esc;
     while(sair != 1){
         do{
-            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n4 - Listar Codigos de estudantes ja usados\n5 - Listar codigos de estudantes temporarios\n6 - Listar codigos Itasil ja usados\n7 - Lista codigos Itasil temporarios\n0 - Encerrar programa\nEscolha uma opção: ");
+            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n4 - Listar Codigos de estudantes ja usados\n5 - Listar codigos de estudantes temporarios\n6 - Listar codigos Itasil ja usados\n7 - Lista codigos Itasil temporarios\n8 - Resetar cinema\n0 - Encerrar programa\nEscolha uma opção: ");
             scanInteiro = scanf("%d", &esc);;        /*Fazendo a verificação para valores inteiros usando o retorno da função scanf*/
             while(getchar() != '\n');
             if(scanInteiro != 1){
@@ -124,6 +151,10 @@ void escolhaSala(void){
             case 6:
                 limparTela();
                 listarCodigosItasil(pHeadItasilAux);
+                break;
+            case 7:
+                limparTela();
+                resetarCinema();
                 break;
             default:
                 limparTela();
@@ -179,12 +210,12 @@ void comprarIngressos(int sala){
                 else if(codigoEstudante < 10000 || codigoEstudante > 99999)    /*Se tiver menos ou mais de 5 dígitos*/
                     printf("Formatação incorreta. O código de estudante possui 5 dígitos. Tente novamente\n");
                 else{     /*Se tiver 5 dígitos*/
-                    int validacaoCodigoEstudante = verificaCodigoEstudante(codigoEstudante);
+                    int validacaoCodigoEstudante = verificaCodigoEstudante(codigoEstudante, sala);
                     if(validacaoCodigoEstudante == 1){
                         /*adicionar o código de estudante na lista encadeada*/
                         int adicao1, adicao2;
-                        adicao1 = adicionarCodigoEstudante(&pHeadEstudante, codigoEstudante);      /*Adicionando na lista encadeada principal*/
-                        adicao2 = adicionarCodigoEstudante(&pHeadEstudanteAux, codigoEstudante);   /*Adicionando na lista encadeada temporária*/
+                        adicao1 = adicionarCodigoEstudante(&pHeadEstudante, codigoEstudante, sala);      /*Adicionando na lista encadeada principal*/
+                        adicao2 = adicionarCodigoEstudante(&pHeadEstudanteAux, codigoEstudante, sala);   /*Adicionando na lista encadeada temporária*/
                         if(adicao1 && adicao2){ 
                             printf("Desconto aplicado com sucesso.\n");
                             break;
@@ -199,7 +230,7 @@ void comprarIngressos(int sala){
                     else if(validacaoCodigoEstudante == -1)
                         printf("Código inválido. Tente novamente.\n");
                     else
-                        printf("Este código já foi utilizado no cinema. Tente novamente.\n");
+                        printf("Este código já foi utilizado nesta sala. Tente novamente.\n");
                 }
             }
         }
@@ -231,12 +262,12 @@ void comprarIngressos(int sala){
                         break;
                     }
                     else{
-                        int validacaoClienteItasil = verificaCodigoItasil(codigoItasil);
+                        int validacaoClienteItasil = verificaCodigoItasil(codigoItasil, sala);
                         if(validacaoClienteItasil == 1){
                             /*adicionar o código do cliente ITASIL na lista encadeada*/
                             unsigned int adicao1, adicao2;
-                            adicao1 = adicionarCodigoItasil(&pHeadItasil, codigoItasil);     /*Adicionando na lista encadeada principal*/
-                            adicao2 = adicionarCodigoItasil(&pHeadItasilAux, codigoItasil);     /*Adicionando na lista encadeada temporária*/
+                            adicao1 = adicionarCodigoItasil(&pHeadItasil, codigoItasil, sala);     /*Adicionando na lista encadeada principal*/
+                            adicao2 = adicionarCodigoItasil(&pHeadItasilAux, codigoItasil, sala);     /*Adicionando na lista encadeada temporária*/
                             if(adicao1 && adicao2){ 
                                 printf("Desconto aplicado com sucesso.\n");
                                 break;
@@ -251,7 +282,7 @@ void comprarIngressos(int sala){
                         else if(validacaoClienteItasil == -1)
                             printf("Código inválido. Tente novamente.\n");
                         else
-                            printf("Este código já foi utilizado no cinema. Tente novamente.\n");
+                            printf("Este código já foi utilizado nesta sala. Tente novamente.\n");
                     }
                 }
             }
@@ -267,6 +298,7 @@ void finalizarPedido(sala, qntIngressosNormais, qntIngressosItasil, qntIngressos
     int i, scan, fileira, coluna, valorTotal;
     int qntIngressos=qntIngressosNormais+qntIngressosItasil+qntIngressosMeiaEntrada;
     char colunaChar;
+    FILE *pArquivo;
     /*Escolhendo os assentos*/
     printaLugares(sala);   /*Mostrando o mapa da sala*/
     for(i=0; i<qntIngressos; i++){
@@ -287,24 +319,32 @@ void finalizarPedido(sala, qntIngressosNormais, qntIngressosItasil, qntIngressos
                 printf("Lugar já ocupado. Tente novamente.\n");
             else{
                 LUGAR_OCUPADO *lugar_ocup = (LUGAR_OCUPADO *)malloc(sizeof(LUGAR_OCUPADO));
-                lugar_ocup->sala = sala;
-                lugar_ocup->fileira = fileira;
-                lugar_ocup->assento = coluna;
-                if(pHeadEstudanteAux != NULL){
-                    lugar_ocup->codigoEstudante = removerCodigoEstudante(&pHeadEstudanteAux);
-                    lugar_ocup->codigoItasil = 0;
-                }
-                else if(pHeadItasilAux != NULL){
-                    lugar_ocup->codigoItasil = removerCodigoItasil(&pHeadItasilAux);
-                    lugar_ocup->codigoEstudante = 0;
-                }
+                pArquivo = fopen(nomeArquivo, "ab");     /*Tentando abrir o arquivo no modo de adição para adicionar as informações do novo lugar ocupado*/
+                if(!pArquivo)
+                    printf("Erro ao salvar as informações.\n");
                 else{
-                    lugar_ocup->codigoEstudante = 0;
-                    lugar_ocup->codigoItasil = 0;
+                    lugar_ocup->sala = sala;
+                    lugar_ocup->fileira = fileira;
+                    lugar_ocup->assento = coluna;
+                    if(pHeadEstudanteAux != NULL){
+                        lugar_ocup->codigoEstudante = removerCodigoEstudante(&pHeadEstudanteAux);
+                        lugar_ocup->codigoItasil = 0;
+                    }
+                    else if(pHeadItasilAux != NULL){
+                        lugar_ocup->codigoItasil = removerCodigoItasil(&pHeadItasilAux);
+                        lugar_ocup->codigoEstudante = 0;
+                    }
+                    else{
+                        lugar_ocup->codigoEstudante = 0;
+                        lugar_ocup->codigoItasil = 0;
+                    }
+                    fwrite(lugar_ocup, sizeof(LUGAR_OCUPADO), 1, pArquivo);    /*Adicionando no arquivo*/
+                    fclose(pArquivo);
+
+                    printf("Assento escolhido com sucesso.\n");
+                    lugares[sala][fileira][coluna] = 'X';
+                    break;
                 }
-                printf("Assento escolhido com sucesso.\n");
-                lugares[sala][fileira][coluna] = 'X';
-                break;
             }
         }
         
@@ -340,15 +380,31 @@ void printaLugares(int sala){
     printf("==============TELA DO CINEMA==============\n");
 }
 
-/*Preenche a matriz de lugares de todas as salas assim que o programa é iniciado*/
+/*Preenche a matriz de lugares de todas as salas e as listas encadeadas de códigos de estudantes e clientes ITASIL assim que o programa é iniciado. Para fazer isso, são lidos todos os dados do arquivo binário*/
 void preencherLugares(){
-    int i, j, k;
-    for(i=0; i<NUM_SALAS; i++){
-        for(j=0; j<FILEIRAS; j++){
-            for(k=0; k<ASSENTOS; k++){
-                lugares[i][j][k] = '0';
+    FILE *pArquivo;
+    pArquivo = fopen(nomeArquivo, "rb");
+    if(!pArquivo)
+        printf("Não foi possível ler os dados salvos.");
+    else{
+        LUGAR_OCUPADO lugar_ocup;
+        int fileira, coluna, sala;
+        rewind(pArquivo);
+        while(!feof(pArquivo)){    /*Quero ler todos os dados do arquivo*/
+            fread(&lugar_ocup, sizeof(LUGAR_OCUPADO), 1, pArquivo);
+            fileira = lugar_ocup.fileira;
+            coluna = lugar_ocup.assento;
+            sala = lugar_ocup.sala;
+            lugares[sala][fileira][coluna] = 'X';     /*Ocupando o lugar na matriz*/
+
+            if(lugar_ocup.codigoEstudante != 0){    /*Se for um estudante*/
+                adicionarCodigoEstudante(&pHeadEstudante, lugar_ocup.codigoEstudante, lugar_ocup.sala);
+            }
+            else if(lugar_ocup.codigoItasil != 0){    /*Se for um cliente ITASIL*/
+                adicionarCodigoItasil(&pHeadItasil, lugar_ocup.codigoItasil, lugar_ocup.sala);
             }
         }
+        fclose(pArquivo);
     }
 }
 
@@ -363,7 +419,7 @@ int retornaNumeroColuna(char caractereColuna){
 }
 
 /*Retorna -1 (código no formato inválido), -2 (código já usado) ou 1 (código válido). A função verifica se o código de estudante já foi usado na sala e se está no fromato válido*/
-int verificaCodigoEstudante(int codigoEstudante){    /*Aqui eu sei que o código de estudante chega com 5 dígitos*/
+int verificaCodigoEstudante(int codigoEstudante, int sala){    /*Aqui eu sei que o código de estudante chega com 5 dígitos*/
     int i, codigoRetorno, somaAlgarismos=0, potenciaDez=10000, copiaCodigoEstudante=codigoEstudante;
     for(i=4; i>=0; i--){
         if(i > 0)
@@ -380,7 +436,7 @@ int verificaCodigoEstudante(int codigoEstudante){    /*Aqui eu sei que o código
     }
 
     if(codigoRetorno == 1){    /*Checando se o código já foi utilizado no cinema*/
-        if(existeCodigoEstudante(pHeadEstudante, codigoEstudante))
+        if(existeCodigoEstudante(pHeadEstudante, codigoEstudante, sala))
             codigoRetorno = -2;
     }
 
@@ -388,15 +444,15 @@ int verificaCodigoEstudante(int codigoEstudante){    /*Aqui eu sei que o código
 }
 
 /*Retorna 1 (codigo valido), -1 (codigo invalido) ou -2(codigo ja usado no cinema)*/
-int verificaCodigoItasil(unsigned int codigoItasil){
+int verificaCodigoItasil(unsigned int codigoItasil, int sala){
     int validacaoCodigo;    
-    if(codigoItasil % 341 == 0 && codigoItasil != 0)
+    if(codigoItasil % 341 == 0)
         validacaoCodigo = 1;
     else
         validacaoCodigo = -1;
 
     if(validacaoCodigo == 1){     /*Checando se o código já foi utilizado no cinema*/
-        if(existeCodigoItasil(pHeadItasil, codigoItasil))
+        if(existeCodigoItasil(pHeadItasil, codigoItasil, sala))
             validacaoCodigo = -2;
     }
 
@@ -416,12 +472,13 @@ int retornaNumLugaresDisponiveis(int sala){
     return numLugaresDisponiveis;
 }
 
-int adicionarCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante){    /*Esta função adicionára sempre no início da lista encadeada*/
+int adicionarCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante, int sala){    /*Esta função adicionára sempre no início da lista encadeada*/
     ESTUDANTE *pNovo = (ESTUDANTE *)malloc(sizeof(ESTUDANTE));
     if(!pNovo)
         return 0;
     else{
         pNovo->codigo = codigoEstudante;
+        pNovo->sala = sala;
         if((*pHead) == NULL)       /*Se a lista estiver vazia*/
             pNovo->pNext = NULL;
         else
@@ -432,12 +489,13 @@ int adicionarCodigoEstudante(ESTUDANTE **pHead, int codigoEstudante){    /*Esta 
     return 1;
 }
 
-int adicionarCodigoItasil(ITASIL **pHead, int codigoItasil){     /*Esta função adicionára sempre no início da lista encadeada*/
+int adicionarCodigoItasil(ITASIL **pHead, int codigoItasil, int sala){     /*Esta função adicionára sempre no início da lista encadeada*/
     ITASIL *pNovo = (ITASIL *)malloc(sizeof(ITASIL));
     if(!pNovo)
         return 0;
     else{
         pNovo->codigo = codigoItasil;
+        pNovo->sala = sala;
         if((*pHead) == NULL)      /*Se a lista estiver vazia*/
             pNovo->pNext = NULL;
         else
@@ -480,20 +538,20 @@ unsigned int removerCodigoItasil(ITASIL **pHead){      /*Esta função removerá
     return codigoRetorno;
 }
 
-int existeCodigoEstudante(ESTUDANTE *pHead, int codigoEstudante){
+int existeCodigoEstudante(ESTUDANTE *pHead, int codigoEstudante, int sala){
     ESTUDANTE *pAux = pHead;
     while(pAux != NULL){
-        if(pAux->codigo == codigoEstudante)
+        if(pAux->codigo == codigoEstudante && pAux->sala == sala)
             return 1;
         pAux = pAux->pNext;
     }
     return 0;
 }
 
-int existeCodigoItasil(ITASIL *pHead, int codigoItasil){
+int existeCodigoItasil(ITASIL *pHead, int codigoItasil, int sala){
     ITASIL *pAux = pHead;
     while(pAux != NULL){
-        if(pAux->codigo == codigoItasil)
+        if(pAux->codigo == codigoItasil && pAux->sala == sala)
             return 1;
         pAux = pAux->pNext;
     }

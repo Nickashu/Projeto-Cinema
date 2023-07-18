@@ -3,8 +3,8 @@
 #include <stdlib.h>
 
 #define NUM_SALAS 3
-#define FILEIRAS 40
-#define ASSENTOS 10
+#define FILEIRAS 3
+#define ASSENTOS 2
 
 const char *nomeArquivo = "cinema.bin";
 
@@ -29,7 +29,6 @@ void escolhaSala();
 void preencherLugares();
 void comprarIngressos(int sala);
 void printaLugares(int sala);
-void printaLugaresDisponiveis(int sala);
 void finalizarPedido(int sala, int qntIngressosNormais, int qntIngressosItasil, int qntIngressosMeiaEntrada);
 int retornaNumLugaresDisponiveis(int sala);
 int retornaNumeroColuna(char caractereColuna);
@@ -52,20 +51,6 @@ ESTUDANTE *pHeadEstudante, *pHeadEstudanteAux;
 
 
 /*funções temporárias*/
-void listarCodigosEstudantes(ESTUDANTE *pHead){
-    printf("\n");
-    while(pHead != NULL){
-        printf("%d - sala %d\n", pHead->codigo, (pHead->sala)+1);
-        pHead = pHead->pNext;
-    }
-}
-void listarCodigosItasil(ITASIL *pHead){
-    printf("\n");
-    while(pHead != NULL){
-        printf("%d - sala %d\n", pHead->codigo, (pHead->sala)+1);
-        pHead = pHead->pNext;
-    }
-}
 void resetarCinema(){
     FILE *arquivo = fopen(nomeArquivo, "wb");
     int i, j, k;
@@ -100,18 +85,18 @@ int main(){
 }
 
 void limparTela(void){   /*Função para limpar a tela do console, ainda fazendo a verificacao do sistema operacional*/
-    #ifdef _linux_
-        system("clear");
-    #elif _WIN32
+    #ifdef _WIN32
         system("cls");
+    #else
+        system("clear");
     #endif
 }
 
-void escolhaSala(void){
+void escolhaSala(){
     int sair=0, scanInteiro, maisDoQueUmInt=0, esc;
     while(sair != 1){
         do{
-            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n4 - Listar Codigos de estudantes ja usados\n5 - Listar codigos de estudantes temporarios\n6 - Listar codigos Itasil ja usados\n7 - Lista codigos Itasil temporarios\n8 - Resetar cinema\n0 - Encerrar programa\nEscolha uma opcao: ");
+            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n4 - Resetar cinema\n0 - Encerrar programa\nEscolha uma opcao: ");
             scanInteiro = scanf("%d", &esc);        /*Fazendo a verificação para valores inteiros usando o retorno da função scanf*/
             if(getchar() != '\n'){
                 maisDoQueUmInt = 1;
@@ -140,22 +125,6 @@ void escolhaSala(void){
                 break;
             case 3:
                 limparTela();
-                listarCodigosEstudantes(pHeadEstudante);
-                break;
-            case 4:
-                limparTela();
-                listarCodigosEstudantes(pHeadEstudanteAux);
-                break;
-            case 5:
-                limparTela();
-                listarCodigosItasil(pHeadItasil);
-                break;
-            case 6:
-                limparTela();
-                listarCodigosItasil(pHeadItasilAux);
-                break;
-            case 7:
-                limparTela();
                 resetarCinema();
                 break;
             default:
@@ -171,14 +140,13 @@ void comprarIngressos(int sala){
     int numLugaresDisponiveis = retornaNumLugaresDisponiveis(sala);    /*Verificando o número de lugares ainda disponíveis na sala*/
 
     if(numLugaresDisponiveis == 0){
-        limparTela();
-        printf("Sala cheia. Faz o L\n");
+        printaLugares(sala);
+        printf("A sala escolhida ja esta cheia. Nao ha ingressos disponiveis.\n\n");
     }
     else{
         printaLugares(sala);   /*Mostrando o mapa da sala*/
-
         do{
-            printf("Digite o numero de ingressos a serem comprados (digite -1 para voltar) -> ");
+            printf("\nDigite o numero de ingressos a serem comprados (digite -1 para voltar) -> ");
             scan = scanf("%d", &qntIngressos);
             if(getchar() != '\n'){
                 maisDoQueUmInt = 1;
@@ -193,7 +161,7 @@ void comprarIngressos(int sala){
         } while(scan != 1 || maisDoQueUmInt || qntIngressos < -1 || qntIngressos == 0 || qntIngressos > numLugaresDisponiveis);
 
         if(qntIngressos != -1){
-            int i, codigoEstudante, qntIngressosMeiaEntrada, qntIngressosItasil, qntIngressosNormais=qntIngressos, copiaQntIngressosMeiaEntrada, copiaQntIngressosItasil;
+            int i, codigoEstudante, qntIngressosMeiaEntrada=0, qntIngressosItasil=0, qntIngressosNormais=qntIngressos, copiaQntIngressosMeiaEntrada, copiaQntIngressosItasil;
             unsigned int codigoItasil;
             do{
                 printf("Digite o numero de meias-entradas (ingressos restantes: %d) -> ", qntIngressosNormais);
@@ -329,7 +297,7 @@ void comprarIngressos(int sala){
 }
 
 void finalizarPedido(sala, qntIngressosNormais, qntIngressosItasil, qntIngressosMeiaEntrada){
-    int i, scan, fileira, coluna, valorTotal;
+    int i, scan, fileira, coluna, valorTotal, maisDoQueUmInt=0;
     int qntIngressos=qntIngressosNormais+qntIngressosItasil+qntIngressosMeiaEntrada;
     char colunaChar;
     FILE *pArquivo;
@@ -338,15 +306,20 @@ void finalizarPedido(sala, qntIngressosNormais, qntIngressosItasil, qntIngressos
         while(1){
             do{
                 printf("Selecione o assento para o ingresso %d/%d no modelo '[FILEIRA] [ASSENTO]' -> ", i+1, qntIngressos);
-                scan = scanf("%d %c", &fileira, &colunaChar);
-                while(getchar() != '\n');
-                if(scan != 2)
+                scan = scanf("%d%*c%c", &fileira, &colunaChar);
+                if(getchar() != '\n'){
+                    maisDoQueUmInt = 1;
+                    while(getchar() != '\n');
+                }
+                else
+                    maisDoQueUmInt = 0;
+                if(scan != 2 || maisDoQueUmInt)
                     printf("Assento invalido. Tente novamente.\n");
-            } while(scan != 2);
+            } while(scan != 2 || maisDoQueUmInt);
 
             fileira = fileira-1;
             coluna = retornaNumeroColuna(colunaChar);
-            if(fileira < 0 || fileira > 39 || coluna == -1 )
+            if(fileira < 0 || fileira > (FILEIRAS-1) || coluna == -1 )
                 printf("Assento invalido. Tente novamente.\n");
             else if(lugares[sala][fileira][coluna] == 'X')
                 printf("Lugar ja ocupado. Tente novamente.\n");
@@ -390,7 +363,7 @@ void finalizarPedido(sala, qntIngressosNormais, qntIngressosItasil, qntIngressos
 /*Printa o mapa da sala, informando lugares ocupados e vazios*/
 void printaLugares(int sala){
     int i, j;
-    printf("==================SALA %d==================\n", sala);
+    printf("==================SALA %d==================\n", sala+1);
     printf("    ");
     for(i=0; i<ASSENTOS; i++){
         printf("%c", vetorLetrasMaiusculas[i]);  
@@ -483,7 +456,7 @@ int verificaCodigoEstudante(int codigoEstudante, int sala){    /*Aqui eu sei que
     return codigoRetorno;
 }
 
-/*Retorná 1 (código válido), -1 (código inválido) ou -2(código já usado no cinema)*/
+/*Retorna 1 (código válido), -1 (código inválido) ou -2(código já usado no cinema)*/
 int verificaCodigoItasil(unsigned int codigoItasil, int sala){
     int validacaoCodigo;    
     if(codigoItasil % 341 == 0)
@@ -548,34 +521,34 @@ int adicionarCodigoItasil(ITASIL **pHead, int codigoItasil, int sala){     /*Est
 
 int removerCodigoEstudante(ESTUDANTE **pHead){     /*Esta função removerá da lista o primeiro código e retornará seu valor*/
     ESTUDANTE *pAux;
-    int codigoRetorno;
+    int codigoRemovido;
 
     pAux = (*pHead);
     if((*pHead) != NULL){
         (*pHead) = (*pHead)->pNext;
-        codigoRetorno = pAux->codigo;
+        codigoRemovido = pAux->codigo;
         free(pAux);
     }
     else
-        codigoRetorno = 0;
+        codigoRemovido = 0;
 
-    return codigoRetorno;
+    return codigoRemovido;
 }
 
 unsigned int removerCodigoItasil(ITASIL **pHead){      /*Esta função removerá da lista o primeiro código e retornará seu valor*/
     ITASIL *pAux;
-    unsigned int codigoRetorno;
+    unsigned int codigoRemovido;
 
     pAux = (*pHead);
     if((*pHead) != NULL){
         (*pHead) = (*pHead)->pNext;
-        codigoRetorno = pAux->codigo;
+        codigoRemovido = pAux->codigo;
         free(pAux);
     }
     else
-        codigoRetorno = 0;
+        codigoRemovido = 0;
 
-    return codigoRetorno;
+    return codigoRemovido;
 }
 
 int existeCodigoEstudante(ESTUDANTE *pHead, int codigoEstudante, int sala){

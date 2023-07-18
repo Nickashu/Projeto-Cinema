@@ -3,8 +3,8 @@
 #include <stdlib.h>
 
 #define NUM_SALAS 3
-#define FILEIRAS 3
-#define ASSENTOS 2
+#define FILEIRAS 40
+#define ASSENTOS 10
 
 const char *nomeArquivo = "cinema.bin";
 
@@ -48,33 +48,6 @@ char vetorLetrasMinusculas[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j'
 ITASIL *pHeadItasil, *pHeadItasilAux;
 ESTUDANTE *pHeadEstudante, *pHeadEstudanteAux;
 
-
-
-/*funções temporárias*/
-void resetarCinema(){
-    FILE *arquivo = fopen(nomeArquivo, "wb");
-    int i, j, k;
-    for(i=0; i<NUM_SALAS; i++){
-        for(j=0; j<FILEIRAS; j++){
-            for(k=0; k<ASSENTOS; k++){
-                lugares[i][j][k] = '0';
-            }
-        }
-    }
-    if(!arquivo)
-        printf("Erro ao abrir o arquivo.\n");
-    else
-        fclose(arquivo);
-    
-    while(pHeadEstudante != NULL){
-        removerCodigoEstudante(&pHeadEstudante);
-    }
-    while(pHeadItasil != NULL){
-        removerCodigoItasil(&pHeadItasil);
-    }
-    printf("Cinema resetado.\n");
-}
-
 int main(){
     limparTela();
     preencherLugares();    /*Aqui, os lugares de todas as salas serão preenchidos*/
@@ -96,7 +69,7 @@ void escolhaSala(){
     int sair=0, scanInteiro, maisDoQueUmInt=0, esc;
     while(sair != 1){
         do{
-            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n4 - Resetar cinema\n0 - Encerrar programa\nEscolha uma opcao: ");
+            printf("Selecione um dos filmes em cartaz para realizar a compra do(s) ingresso(s):\n1 - Velozes e Furiosos 137\n2 - The Flash\n3 - Transformers\n0 - Encerrar programa\nEscolha uma opcao: ");
             scanInteiro = scanf("%d", &esc);        /*Fazendo a verificação para valores inteiros usando o retorno da função scanf*/
             if(getchar() != '\n'){
                 maisDoQueUmInt = 1;
@@ -122,10 +95,6 @@ void escolhaSala(){
                 break;
             case 2:
                 comprarIngressos(esc);     /*sala 3*/
-                break;
-            case 3:
-                limparTela();
-                resetarCinema();
                 break;
             default:
                 limparTela();

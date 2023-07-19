@@ -51,13 +51,13 @@ ESTUDANTE *pHeadEstudante, *pHeadEstudanteAux;
 int main(){
     limparTela();
     preencherLugares();    /*Aqui, os lugares de todas as salas serão preenchidos*/
-    
+
     escolhaSala();
     printf("\nPrograma encerrado.\n");
     return 0;
 }
 
-void limparTela(void){   /*Função para limpar a tela do console, ainda fazendo a verificacao do sistema operacional*/
+void limparTela(void){   /*Função para limpar a tela do console, fazendo a verificação do sistema operacional*/
     #ifdef _WIN32
         system("cls");
     #else
@@ -367,8 +367,10 @@ void preencherLugares(){
         }
     }
     pArquivo = fopen(nomeArquivo, "rb");
-    if(!pArquivo)
-        printf("Nao foi possivel ler os dados salvos.");
+    if(!pArquivo){     /*Se o arquivo não existir*/
+        pArquivo = fopen(nomeArquivo, "wb");
+        fclose(pArquivo);
+    }
     else{
         LUGAR_OCUPADO lugar_ocup;
         int fileira, coluna, sala;
